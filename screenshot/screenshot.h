@@ -53,7 +53,8 @@
 
 #include <QPixmap>
 #include <QWidget>
-
+#include <QtConcurrent>
+#include <Qfuture>
 QT_BEGIN_NAMESPACE
 class QCheckBox;
 class QGridLayout;
@@ -63,6 +64,7 @@ class QLabel;
 class QPushButton;
 class QSpinBox;
 class QVBoxLayout;
+class QComboBox;
 QT_END_NAMESPACE
 
 //! [0]
@@ -81,11 +83,16 @@ private slots:
     void saveScreenshot();
     void shootScreen();
     void updateCheckBox();
+    QPixmap scaleScreenshot(QPixmap);
+    void Finished();
 
 private:
+    QString fileName;
+    QComboBox* Items;
     void updateScreenshotLabel();
 
     QPixmap originalPixmap;
+     QFuture<QPixmap> future;
 
     QLabel *screenshotLabel;
     QSpinBox *delaySpinBox;

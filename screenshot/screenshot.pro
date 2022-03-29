@@ -1,4 +1,5 @@
 QT += widgets
+QT += concurrent
 requires(qtConfig(filedialog))
 
 HEADERS             = screenshot.h

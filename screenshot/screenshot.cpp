@@ -49,9 +49,11 @@
 ****************************************************************************/
 
 #include <QtWidgets>
-
+#include <QtConcurrent>
 #include "screenshot.h"
-
+#include <QStringList>
+#include <QComboBox>
+#include <QFuture>
 //! [0]
 Screenshot::Screenshot()
     :  screenshotLabel(new QLabel(this))
@@ -64,7 +66,10 @@ Screenshot::Screenshot()
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(screenshotLabel);
-
+    QStringList list_items;
+    list_items << "1" << "2" << "3" << "4";
+    Items = new  QComboBox();
+    Items->addItems(list_items);
     QGroupBox *optionsGroupBox = new QGroupBox(tr("Options"), this);
     delaySpinBox = new QSpinBox(optionsGroupBox);
     delaySpinBox->setSuffix(tr(" s"));
@@ -79,7 +84,7 @@ Screenshot::Screenshot()
     optionsGroupBoxLayout->addWidget(new QLabel(tr("Screenshot Delay:"), this), 0, 0);
     optionsGroupBoxLayout->addWidget(delaySpinBox, 0, 1);
     optionsGroupBoxLayout->addWidget(hideThisWindowCheckBox, 1, 0, 1, 2);
-
+    optionsGroupBoxLayout->addWidget(Items, 1, 0, 2, 2);
     mainLayout->addWidget(optionsGroupBox);
 
     QHBoxLayout *buttonsLayout = new QHBoxLayout;
@@ -141,17 +146,57 @@ void Screenshot::saveScreenshot()
     QStringList mimeTypes;
     const QList<QByteArray> baMimeTypes = QImageWriter::supportedMimeTypes();
     for (const QByteArray &bf : baMimeTypes)
+    {
         mimeTypes.append(QLatin1String(bf));
+    }
     fileDialog.setMimeTypeFilters(mimeTypes);
     fileDialog.selectMimeTypeFilter("image/" + format);
     fileDialog.setDefaultSuffix(format);
     if (fileDialog.exec() != QDialog::Accepted)
         return;
-    const QString fileName = fileDialog.selectedFiles().first();
-    if (!originalPixmap.save(fileName)) {
-        QMessageBox::warning(this, tr("Save Error"), tr("The image could not be saved to \"%1\".")
-                             .arg(QDir::toNativeSeparators(fileName)));
-    }
+     fileName = fileDialog.selectedFiles().first();
+    //QPixmap scaled = scaledScreen() ;
+     future = QtConcurrent::run(&Screenshot::scaleScreenshot,this,originalPixmap);
+        QFutureWatcher<QPixmap>* obj = new QFutureWatcher<QPixmap>;
+        obj->connect(obj,&QFutureWatcher<QPixmap>::finished,this,&Screenshot::Finished);
+        obj->setFuture(future);
+    // Start the computation.
+
+
+
+
+
+
+
+
+//
+
+}
+void Screenshot::Finished()
+{
+    QPixmap result = future.result();
+
+    if (!result.save(fileName))
+       {
+          QMessageBox::warning(this, tr("Save Error"), tr("The image could not be saved to \"%1\".")
+                                .arg(QDir::toNativeSeparators(fileName)));
+       }
+
+}
+
+/*QPixmap Screenshot::scaledScreen()
+{
+    QPixmap scaled = originalPixmap.scaled(originalPixmap.height()/Items->currentText().toInt(),
+
+                                          originalPixmap.width()/Items->currentText().toInt(),Qt::KeepAspectRatio);
+    return scaled;
+}*/
+QPixmap Screenshot::scaleScreenshot(QPixmap  pixmap)
+{
+    int index = Items->currentText().toInt();
+
+    pixmap = pixmap.scaled(pixmap.width()/index,pixmap.height()/index,Qt::IgnoreAspectRatio);
+    return pixmap;
 }
 //! [3]
 
